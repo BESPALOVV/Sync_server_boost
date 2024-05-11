@@ -12,17 +12,17 @@ using namespace boost::asio;
 
 boost::recursive_mutex mtx;
 
-void accept_clients_thread(boost::shared_ptr<server> client, io_context& context)
+void accept_clients_thread(std::vector< boost::shared_ptr<server>>& clients, io_context& context)
 {
 	ip::tcp::acceptor acceptor(context, ip::tcp::endpoint(ip::tcp::v4(), 1313));
 	for (;;)
 	{
 		std::cout << "wait connections" << std::endl;
 
-		auto new_ = boost::shared_ptr<server>(new server(context));
+		auto new_ = boost::shared_ptr<server>(new server(context,clients));
 		acceptor.accept(new_->sock);
 		mtx.lock();
-		client->clients.push_back(new_);
+		clients.push_back(new_);
 
 		std::cout << "have +1 connection" << std::endl;
 		mtx.unlock();
@@ -30,19 +30,19 @@ void accept_clients_thread(boost::shared_ptr<server> client, io_context& context
 
 }
 
-void handle_clients_request(boost::shared_ptr<server>& client)
+void handle_clients_request(std::vector<boost::shared_ptr<server>>& clients)
 {
 	while (true)
 	{
 		mtx.lock();
-		for (auto it = client->clients.begin(),e= client->clients.end();it != e;it++)
+		for (auto it = clients.begin(),e= clients.end();it != e;it++)
 		{
 			//std::cout << "handle colients" << std::endl;
 			(*it)->answer_to_client();
 
 			if ((*it)->destroy)
 			{
-				it =client->clients.erase(it);
+				it =clients.erase(it);
 
 				break;
 			}
@@ -86,8 +86,7 @@ void server::read_request()
 		if (sock.available())
 		{
 			std::cout << "ALREADY READ::" << already_read << std::endl;
-
-
+			
 			already_read += sock.read_some(buffer(buff_read + already_read, 1024 - already_read));
 
 			std::cout << "ALREADY READ::" << already_read << std::endl;
@@ -175,7 +174,7 @@ void server::on_clients()
 {
 	std::string msg;
 	//rec_mtx.lock();
-	for (auto client : clients)
+	for (auto client : clients_)
 	{
 		msg += client->username + " ";
 	}

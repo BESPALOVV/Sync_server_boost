@@ -18,7 +18,7 @@ using namespace boost::asio;
 class server : public boost::enable_shared_from_this<server>, boost::noncopyable
 {
 public:
-	server(io_context& context) :sock(context), clients_list_changed(false), already_read(0) {}
+	server(io_context& context, std::vector<boost::shared_ptr<server>>& clients) :sock(context),clients_(clients), clients_list_changed(false), already_read(0) {}
 
 	void answer_to_client();
 
@@ -39,6 +39,7 @@ private:
 	bool timed_out();
 
 
+
 	ip::tcp::socket sock;
 
 	char buff_read[1024];
@@ -53,11 +54,11 @@ private:
 
 	bool destroy = false;
 
-	std::vector<boost::shared_ptr<server>> clients;
+    std::vector<boost::shared_ptr<server>>& clients_;
 
-	friend	void accept_clients_thread(boost::shared_ptr<server> client, io_context& context);
+	friend	void accept_clients_thread(std::vector< boost::shared_ptr<server>>& clients, io_context& context);
 
-	friend void handle_clients_request(boost::shared_ptr<server>& client);
+	friend void handle_clients_request(std::vector<boost::shared_ptr<server>>& clients);
 };
 
 
