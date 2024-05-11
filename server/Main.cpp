@@ -9,10 +9,6 @@ int main()
 
 	std::vector<boost::shared_ptr<server>> clients;
 
-	//boost::shared_ptr<server> first_client(new server(context,clients));
-
-	//clients.push_back(first_client);
-
 	boost::thread_group tg;
 
 	tg.create_thread(boost::bind(accept_clients_thread, boost::ref(clients), boost::ref(context)));
